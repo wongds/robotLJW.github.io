@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>K8s部署Dashboard | 萝卜头LJW的博客</title>
+    <meta property="og:title" content="K8s部署Dashboard - 萝卜头LJW的博客">
+    <meta property="og:type" content="article">
+        
+    <meta property="article:published_time" content='2020-04-17T23:12:30&#43;08:00'>
+        
+        
+    <meta property="article:modified_time" content='2020-04-17T23:12:30&#43;08:00'>
+        
+    <meta name="Keywords" content="">
+    <meta name="description" content="K8s部署Dashboard">
+        <meta name="author" content="萝卜头">
+        
+    <meta property="og:url" content="https://robotljw.github.io/post/2020-4-17-install-dashboard/">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+    <link rel="stylesheet" href='/css/normalize.css'>
+    <link rel="stylesheet" href='/css/style.css'>
+    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+    
+
+
+    
+    
+</head>
+
+
+<body>
+    <header id="header" class="clearfix">
+    <div class="container">
+        <div class="col-group">
+            <div class="site-name ">
+                
+                    <a id="logo" href="https://robotljw.github.io/">
+                        萝卜头LJW的博客
+                    </a>
+                
+                <p class="description">少一些功利主义的追求，多一些不为什么的坚持</p>
+            </div>
+            <div>
+                <nav id="nav-menu" class="clearfix">
+                    <a class="current" href="https://robotljw.github.io/">首页</a>
+                    
+                    <a  href="https://robotljw.github.io/tools/" title="工具">工具</a>
+                    
+                    <a  href="https://robotljw.github.io/archives/" title="归档">归档</a>
+                    
+                    <a  href="https://robotljw.github.io/about/" title="关于">关于</a>
+                    
+                </nav>
+            </div>
+        </div>
+    </div>
+</header>
+
+    <div id="body">
+        <div class="container">
+            <div class="col-group">
+
+                <div class="col-8" id="main">
+                    
+<div class="res-cons">
+    
+    <article class="post">
+        <header>
+            <h1 class="post-title">K8s部署Dashboard</h1>
+        </header>
+        <date class="post-meta meta-date">
+            2020年4月17日
+        </date>
+        
+        <div class="post-meta">
+            <span>|</span>
+            
+            <span class="meta-category"><a href='https://robotljw.github.io/categories/K8s'>K8s</a></span>
+            
+        </div>
+        
+        
+        <div class="post-meta">
+            <span id="busuanzi_container_page_pv">|<span id="busuanzi_value_page_pv"></span><span>
+                    阅读</span></span>
+        </div>
+        
+        
+        <div class="post-content">
+            
+
+<blockquote>
+<p>上一篇文章讲述了自己如果使用 Kubeadm 安装k8s，部署应用还是需要一个前端页面，这样便于操作。</p>
+</blockquote>
+
+<h2 id="0-序言">0. 序言</h2>
+
+<h3 id="0-1-本文的目录">0.1 本文的目录</h3>
+
+<p><img src="../../img/2020-4-17-install-dashboard/outline.png" alt="" /></p>
+
+<h3 id="0-2-阅读本文可以给你带来什么">0.2 阅读本文可以给你带来什么</h3>
+
+<p>简单了解在社区k8s上部署Dashboard。</p>
+
+<h2 id="1-部署dashboard">1. 部署Dashboard</h2>
+
+<h3 id="1-1-官网推荐部署">1.1 官网推荐部署</h3>
+
+<p><a href="https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui">官网</a></p>
+
+<p>其实也就是简单的2步</p>
+
+<pre><code class="language-shell">kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta8/aio/deploy/recommended.yaml
+
+kubectl proxy
+
+# 访问
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+</code></pre>
+
+<h3 id="1-2-通过nodeport访问dashboard">1.2 通过NodePort访问Dashboard</h3>
+
+<p>1.下载yaml</p>
+
+<pre><code class="language-shell">wget -e robots=off https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0-beta8/aio/deploy/recommended.yaml
+</code></pre>
+
+<p>2.创建namespace</p>
+
+<pre><code class="language-shell">kubectl create ns kubernetes-dashboard
+</code></pre>
+
+<p>将recommended.yaml中的创建namespace的配置删除</p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/delete-namespace.png" alt="" /></p>
+
+<p>3.创建证书</p>
+
+<pre><code class="language-shell"># 创建目录
+mkdir certs
+cd certs
+
+openssl genrsa -out dashboard.key 2048
+openssl req -new -out dashboard.csr -key dashboard.key -subj '/CN=kubernetes-dashboard'
+openssl x509 -req -in dashboard.csr -signkey dashboard.key -out dashboard.crt
+</code></pre>
+
+<p>4.创建secret</p>
+
+<pre><code class="language-shell">kubectl create secret generic kubernetes-dashboard-certs --from-file=dashboard.key --from-file=dashboard.crt -nkubernetes-dashboard
+</code></pre>
+
+<p>5.删除recommended.yaml中secret</p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/dashboard-secrets.png" alt="" /></p>
+
+<p>6.修改service类型位nodeport</p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/service-nodeport.png" alt="" /></p>
+
+<p>7.修改ClusterRoleBinding绑定用户——当前集群管理员用户</p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/clusterrole.png" alt="" /></p>
+
+<p>8.添加跳过登陆参数</p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/enable-skip-login.png" alt="" /></p>
+
+<p>详细 yaml 信息如下：</p>
+
+<pre><code class="language-yaml"># Copyright 2017 The Kubernetes Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+      nodePort: 30001
+  type: NodePort
+  selector:
+    k8s-app: kubernetes-dashboard
+
+---
+
+
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard-csrf
+  namespace: kubernetes-dashboard
+type: Opaque
+data:
+  csrf: &quot;&quot;
+
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard-key-holder
+  namespace: kubernetes-dashboard
+type: Opaque
+
+---
+
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard-settings
+  namespace: kubernetes-dashboard
+
+---
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+rules:
+  # Allow Dashboard to get, update and delete Dashboard exclusive secrets.
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;secrets&quot;]
+    resourceNames: [&quot;kubernetes-dashboard-key-holder&quot;, &quot;kubernetes-dashboard-certs&quot;, &quot;kubernetes-dashboard-csrf&quot;]
+    verbs: [&quot;get&quot;, &quot;update&quot;, &quot;delete&quot;]
+    # Allow Dashboard to get and update 'kubernetes-dashboard-settings' config map.
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;configmaps&quot;]
+    resourceNames: [&quot;kubernetes-dashboard-settings&quot;]
+    verbs: [&quot;get&quot;, &quot;update&quot;]
+    # Allow Dashboard to get metrics.
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;services&quot;]
+    resourceNames: [&quot;heapster&quot;, &quot;dashboard-metrics-scraper&quot;]
+    verbs: [&quot;proxy&quot;]
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;services/proxy&quot;]
+    resourceNames: [&quot;heapster&quot;, &quot;http:heapster:&quot;, &quot;https:heapster:&quot;, &quot;dashboard-metrics-scraper&quot;, &quot;http:dashboard-metrics-scraper&quot;]
+    verbs: [&quot;get&quot;]
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+rules:
+  # Allow Metrics Scraper to get metrics from the Metrics server
+  - apiGroups: [&quot;metrics.k8s.io&quot;]
+    resources: [&quot;pods&quot;, &quot;nodes&quot;]
+    verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubernetes-dashboard
+subjects:
+  - kind: ServiceAccount
+    name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubernetes-dashboard
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: kubernetes-dashboard
+    namespace: kubernetes-dashboard
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: kubernetes-dashboard
+  template:
+    metadata:
+      labels:
+        k8s-app: kubernetes-dashboard
+    spec:
+      containers:
+        - name: kubernetes-dashboard
+          image: kubernetesui/dashboard:v2.0.0-beta8
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          args:
+            - --enable-skip-login
+            - --auto-generate-certificates
+            - --namespace=kubernetes-dashboard
+            # Uncomment the following line to manually specify Kubernetes API server Host
+            # If not specified, Dashboard will attempt to auto discover the API server and connect
+            # to it. Uncomment only if the default does not work.
+            # - --apiserver-host=http://my-address:port
+          volumeMounts:
+            - name: kubernetes-dashboard-certs
+              mountPath: /certs
+              # Create on-disk volume to store exec logs
+            - mountPath: /tmp
+              name: tmp-volume
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /
+              port: 8443
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsUser: 1001
+            runAsGroup: 2001
+      volumes:
+        - name: kubernetes-dashboard-certs
+          secret:
+            secretName: kubernetes-dashboard-certs
+        - name: tmp-volume
+          emptyDir: {}
+      serviceAccountName: kubernetes-dashboard
+      nodeSelector:
+        &quot;beta.kubernetes.io/os&quot;: linux
+      # Comment the following tolerations if Dashboard must not be deployed on master
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: dashboard-metrics-scraper
+  name: dashboard-metrics-scraper
+  namespace: kubernetes-dashboard
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    k8s-app: dashboard-metrics-scraper
+
+---
+
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    k8s-app: dashboard-metrics-scraper
+  name: dashboard-metrics-scraper
+  namespace: kubernetes-dashboard
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      k8s-app: dashboard-metrics-scraper
+  template:
+    metadata:
+      labels:
+        k8s-app: dashboard-metrics-scraper
+      annotations:
+        seccomp.security.alpha.kubernetes.io/pod: 'runtime/default'
+    spec:
+      containers:
+        - name: dashboard-metrics-scraper
+          image: kubernetesui/metrics-scraper:v1.0.1
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /
+              port: 8000
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          volumeMounts:
+          - mountPath: /tmp
+            name: tmp-volume
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsUser: 1001
+            runAsGroup: 2001
+      serviceAccountName: kubernetes-dashboard
+      nodeSelector:
+        &quot;beta.kubernetes.io/os&quot;: linux
+      # Comment the following tolerations if Dashboard must not be deployed on master
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+
+</code></pre>
+
+<p>9.部署recommended.yaml</p>
+
+<pre><code class="language-shell">kubectl create -f recommended.yaml
+</code></pre>
+
+<p><strong>NET::ERR_CERT_INVALID问题</strong></p>
+
+<p>访问https://<controlplaneip>:30001</p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/err-cert-invalid.png" alt="" /></p>
+
+<blockquote>
+<p>解决办法</p>
+
+<p>在chrome该页面上，直接键盘敲入这11个字符：<strong>thisisunsafe</strong></p>
+
+<p>参考：<a href="http://blog.csdn.net/sendwave/article/details/104425342">http://blog.csdn.net/sendwave/article/details/104425342</a></p>
+</blockquote>
+
+<p><strong>界面展示:</strong></p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/login.png" alt="" /></p>
+
+<p><img src="../../img/2020-4-17-install-dashboard/skip-login.png" alt="" /></p>
+
+<h2 id="2-总结">2. 总结</h2>
+
+<p>本文简单讲述了在如何在k8s安装Dashboard的2种方式，推荐第二种。</p>
+
+<blockquote>
+<p>参考</p>
+
+<p><a href="https://github.com/kubernetes/dashboard">https://github.com/kubernetes/dashboard</a></p>
+
+<p><a href="https://www.jianshu.com/p/c6d560d12d50">https://www.jianshu.com/p/c6d560d12d50</a></p>
+</blockquote>
+
+        </div>
+
+        
+<div class="post-archive">
+    <ul class="post-copyright">
+        <li><strong>原文作者：</strong><a rel="author" href="https://robotljw.github.io/">萝卜头LJW</a></li>
+        <li style="word-break:break-all"><strong>原文链接：</strong><a href="https://robotljw.github.io/post/2020-4-17-install-dashboard/">https://robotljw.github.io/post/2020-4-17-install-dashboard/</a></li>
+        <li><strong>版权声明：</strong>本作品采用<a rel="license" href="https://creativecommons.org/licenses/by-nc-nd/4.0/">知识共享署名-非商业性使用-禁止演绎 4.0 国际许可协议</a>进行许可，非商业转载请注明出处（作者，原文链接），商业转载请联系作者获得授权。</li>
+    </ul>
+</div>
+<br/>
+
+
+
+        
+
+<div class="post-archive">
+    <h2>See Also</h2>
+    <ul class="listing">
+        
+        <li><a href="/post/2020-4-16-kubeadm-install-k8s/">Kubeadm安装k8s1.18.1</a></li>
+        
+        <li><a href="/post/2020-3-5-hugo-blog/">Hugo搭建个人博客</a></li>
+        
+        <li><a href="/about/">关于我</a></li>
+        
+        <li><a href="/post/2020-1-27-classical-sorting-algorithm/">经典排序算法</a></li>
+        
+        <li><a href="/post/2020-1-27-thank-you-kobe/">Thank You Kobe</a></li>
+        
+    </ul>
+</div>
+
+
+        <div class="post-meta meta-tags">
+            
+            <ul class="clearfix">
+                
+                <li><a href='https://robotljw.github.io/tags/K8s'>K8s</a></li>
+                
+            </ul>
+            
+        </div>
+    </article>
+    
+    
+
+    
+    
+    <div class="post bg-white">
+      <script src="https://utteranc.es/client.js"
+            repo= "robotLJW/blog-comments"
+            issue-term="pathname"
+            theme="github-light"
+            crossorigin="anonymous"
+            async>
+      </script>
+    </div>
+    
+</div>
+
+                </div>
+
+                <div id="secondary">
+    <section class="widget">
+        <form id="search" action='https://robotljw.github.io/search/' method="get" accept-charset="utf-8" target="_blank" _lpchecked="1">
+      
+      <input type="text" name="q" maxlength="20" placeholder="Search">
+      <input type="hidden" name="sitesearch" value="https://robotljw.github.io/">
+      <button type="submit" class="submit icon-search"></button>
+</form>
+    </section>
+    
+    <section class="widget">
+        <h3 class="widget-title">最近文章</h3>
+<ul class="widget-list">
+    
+    <li>
+        <a href="https://robotljw.github.io/post/2020-4-17-install-dashboard/" title="K8s部署Dashboard">K8s部署Dashboard</a>
+    </li>
+    
+    <li>
+        <a href="https://robotljw.github.io/post/2020-4-16-kubeadm-install-k8s/" title="Kubeadm安装k8s1.18.1">Kubeadm安装k8s1.18.1</a>
+    </li>
+    
+    <li>
+        <a href="https://robotljw.github.io/post/2020-3-5-hugo-blog/" title="Hugo搭建个人博客">Hugo搭建个人博客</a>
+    </li>
+    
+    <li>
+        <a href="https://robotljw.github.io/post/2020-1-27-classical-sorting-algorithm/" title="经典排序算法">经典排序算法</a>
+    </li>
+    
+    <li>
+        <a href="https://robotljw.github.io/post/2020-1-27-thank-you-kobe/" title="Thank You Kobe">Thank You Kobe</a>
+    </li>
+    
+</ul>
+    </section>
+
+    
+
+    <section class="widget">
+        <h3 class="widget-title">分类</h3>
+<ul class="widget-list">
+    
+    <li><a href="https://robotljw.github.io/categories/Hugo/">Hugo (1)</a></li>
+    
+    <li><a href="https://robotljw.github.io/categories/K8s/">K8s (2)</a></li>
+    
+    <li><a href="https://robotljw.github.io/categories/%E6%88%91%E7%9A%84%E4%BA%BA%E7%94%9F/">我的人生 (1)</a></li>
+    
+    <li><a href="https://robotljw.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法 (1)</a></li>
+    
+</ul>
+    </section>
+
+    <section class="widget">
+        <h3 class="widget-title">标签</h3>
+<div class="tagcloud">
+    
+    <a href="https://robotljw.github.io/tags/Hugo/">Hugo</a>
+    
+    <a href="https://robotljw.github.io/tags/K8s/">K8s</a>
+    
+    <a href="https://robotljw.github.io/tags/Kubeadm/">Kubeadm</a>
+    
+    <a href="https://robotljw.github.io/tags/%E6%88%91%E7%9A%84%E4%BA%BA%E7%94%9F/">我的人生</a>
+    
+    <a href="https://robotljw.github.io/tags/%E6%8E%92%E5%BA%8F/">排序</a>
+    
+    <a href="https://robotljw.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/">数据结构与算法</a>
+    
+</div>
+    </section>
+
+    
+<section class="widget">
+    <h3 class="widget-title">友情链接</h3>
+    <ul class="widget-list">
+        
+        <li>
+            <a target="_blank" href="https://blog.csdn.net/u013164931" title="萝卜头CSDN的博客">萝卜头CSDN的博客</a>
+        </li>
+        
+    </ul>
+</section>
+
+
+    <section class="widget">
+        <h3 class="widget-title">其它</h3>
+        <ul class="widget-list">
+            <li><a href="https://robotljw.github.io/index.xml">文章 RSS</a></li>
+        </ul>
+    </section>
+</div>
+            </div>
+        </div>
+    </div>
+    <footer id="footer">
+    <div class="container">
+        &copy; 2020 <a href="https://robotljw.github.io/">萝卜头LJW的博客 By 萝卜头LJW</a>.
+        Powered by <a rel="nofollow noreferer noopener" href="https://gohugo.io" target="_blank">Hugo</a>.
+        <a href="https://www.flysnow.org/" target="_blank">Theme</a> based on <a href="https://github.com/flysnow-org/maupassant-hugo" target="_blank">maupassant</a>.
+        
+    </div>
+</footer>
+
+
+    
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+                inlineMath: [['$', '$']],
+                processEscapes: true
+                }
+            };
+    </script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML' async></script>
+
+
+<a id="rocket" href="#top"></a>
+<script type="text/javascript" src='/js/totop.js?v=0.0.0' async=""></script>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'GA ID', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+
+    <script type="text/javascript" src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" async></script>
+
+
+
+
+</body>
+
+</html>
