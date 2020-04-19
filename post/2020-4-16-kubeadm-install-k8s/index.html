@@ -411,7 +411,8 @@ kubeadm join --token &lt;token&gt; &lt;control-plane-host&gt;:&lt;control-plane-
 kubeadm token create
 
 # 创建discovery-token-ca-cert-hash
-
+openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2&gt;/dev/null | \
+   openssl dgst -sha256 -hex | sed 's/^.* //'
 </code></pre>
 
 <p><img src="../../img/2020-4-16-kubeadm-install-k8s/token-hash.png" alt="" /></p>
