@@ -4,7 +4,42 @@
   
   <url>
     <loc>https://robotljw.github.io/categories/</loc>
-    <lastmod>2020-04-17T23:12:30+08:00</lastmod>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://robotljw.github.io/post/</loc>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://robotljw.github.io/tags/</loc>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://robotljw.github.io/categories/%E5%AD%A6%E4%B9%A0%E6%96%B9%E6%B3%95/</loc>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://robotljw.github.io/post/2020-5-1-improve-efficiency/</loc>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://robotljw.github.io/tags/%E6%95%88%E7%8E%87/</loc>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://robotljw.github.io/</loc>
+    <lastmod>2020-05-01T19:04:28+08:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -23,24 +58,6 @@
   <url>
     <loc>https://robotljw.github.io/post/2020-4-17-install-dashboard/</loc>
     <lastmod>2020-04-17T23:12:30+08:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>https://robotljw.github.io/post/</loc>
-    <lastmod>2020-04-17T23:12:30+08:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://robotljw.github.io/tags/</loc>
-    <lastmod>2020-04-17T23:12:30+08:00</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>https://robotljw.github.io/</loc>
-    <lastmod>2020-04-17T23:12:30+08:00</lastmod>
-    <priority>0</priority>
   </url>
   
   <url>
